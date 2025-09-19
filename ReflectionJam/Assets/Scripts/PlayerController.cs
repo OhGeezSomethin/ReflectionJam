@@ -6,10 +6,18 @@ public class PlayerController : MonoBehaviour
 {
     private Rigidbody playerRb;
     private Vector2 moveDirection;
+    private bool isAirborne;
+    private bool hasDashed;
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private float speed = 50f;
+    [SerializeField] private float jumpPower = 8f;
+    [SerializeField] private float dashPower = 10f;
+    [SerializeField] private int maxJump = 2;
+    private int jumpCount;
 
     public InputAction playerMove;
+    public InputAction playerJump;
+    public InputAction playerDash;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -24,6 +32,9 @@ public class PlayerController : MonoBehaviour
         moveDirection = playerMove.ReadValue<Vector2>();
 
         if (moveDirection.magnitude > 1) moveDirection.Normalize(); // Stops diagonal movement from being faster
+
+        PlayerJump();
+        PlayerDash();
     }
 
     void FixedUpdate()
@@ -49,13 +60,63 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnEnable()
+    void PlayerJump()
     {
-        playerMove.Enable();
+        if (playerJump.triggered && jumpCount < maxJump)
+        {
+            playerRb.AddForce(Vector3.up * jumpPower, ForceMode.Impulse);
+            jumpCount++;
+            isAirborne = true;
+            Debug.Log("Jump Test");
+        }
     }
 
-    private void OnDisable()
+    void PlayerDash()
+    {
+        if (playerDash.triggered)
+        {
+            if (!isAirborne)
+            {
+                playerRb.AddForce(transform.forward * (dashPower - 5), ForceMode.Impulse);
+                Debug.Log("Ground Dash Test");
+            } else if (isAirborne && !hasDashed)
+            {
+                playerRb.AddForce(transform.forward * dashPower, ForceMode.Impulse);
+                hasDashed = true;
+                Debug.Log("Air Dash Test");
+            }
+        }
+    }
+
+    private void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.CompareTag("Ground"))
+        {
+            // Checks if player lands on TOP of ground
+            foreach(ContactPoint contactPoint in other.contacts)
+            {
+                if(Vector3.Dot(contactPoint.normal, Vector3.up) > 0.5f)
+                {
+                    jumpCount = 0;
+                    isAirborne = false;
+                    hasDashed = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    void OnEnable()
+    {
+        playerMove.Enable();
+        playerJump.Enable();
+        playerDash.Enable();
+    }
+
+    void OnDisable()
     {
         playerMove.Disable();
+        playerJump.Disable();
+        playerDash.Disable();
     }
 }
