@@ -2,44 +2,58 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerController : MonoBehaviour
+public class GreenPlayerController : MonoBehaviour
 {
     private Rigidbody playerRb;
+    private Animator playerAnimator;
+
     private Vector2 moveDirection;
     private bool isAirborne;
     private bool hasDashed;
     [SerializeField] private Transform cameraTransform;
-    [SerializeField] private float speed = 50f;
+    [SerializeField] private float speed = 10f;
     [SerializeField] private float jumpPower = 8f;
     [SerializeField] private float dashPower = 10f;
-    [SerializeField] private int maxJump = 2;
+    [SerializeField] private int maxJump = 1;
     private int jumpCount;
 
+    public bool isActivePlayer = true;
+
     public InputAction playerMove;
-    public InputAction playerJump;
-    public InputAction playerDash;
+    public InputAction playerAbilityOne;
+    public InputAction playerAbilityTwo;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         playerRb = GetComponent<Rigidbody>();
+        playerAnimator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
     void Update()
     {
         moveDirection = playerMove.ReadValue<Vector2>();
-
+        
         if (moveDirection.magnitude > 1) moveDirection.Normalize(); // Stops diagonal movement from being faster
 
-        PlayerJump();
-        PlayerDash();
+        // Changes movement animation based on speed and if on ground (Idle/Walk)
+        playerAnimator.SetFloat("Speed", moveDirection.magnitude);
+        playerAnimator.SetBool("IsGrounded", !isAirborne);
+
+        if (isActivePlayer)
+        {
+            PlayerJump();
+        }
     }
 
     void FixedUpdate()
     {
-        PlayerMove();
+        if (isActivePlayer)
+        {
+            PlayerMove();
+        }
     }
 
     void PlayerMove()
@@ -62,18 +76,23 @@ public class PlayerController : MonoBehaviour
 
     void PlayerJump()
     {
-        if (playerJump.triggered && jumpCount < maxJump)
+        if (playerAbilityOne.triggered && jumpCount < maxJump)
         {
             playerRb.AddForce(Vector3.up * jumpPower, ForceMode.Impulse);
             jumpCount++;
             isAirborne = true;
+
+            // Triggers the jumping animation
+            playerAnimator.SetTrigger("Jump");
+            playerAnimator.SetBool("IsGrounded", false);
+
             Debug.Log("Jump Test");
         }
     }
 
-    void PlayerDash()
+    void PlayerDash() // Unused but saved here for possible future use in another project
     {
-        if (playerDash.triggered)
+        if (playerAbilityTwo.triggered)
         {
             if (!isAirborne)
             {
@@ -100,23 +119,31 @@ public class PlayerController : MonoBehaviour
                     jumpCount = 0;
                     isAirborne = false;
                     hasDashed = false;
+
+                    // Update animation
+                    playerAnimator.SetBool("IsGrounded", true);
                     break;
                 }
             }
         }
     }
 
+    public Vector2 GetMoveInput()
+    {
+        return moveDirection;
+    }
+
     void OnEnable()
     {
         playerMove.Enable();
-        playerJump.Enable();
-        playerDash.Enable();
+        playerAbilityOne.Enable();
+        playerAbilityTwo.Enable();
     }
 
     void OnDisable()
     {
         playerMove.Disable();
-        playerJump.Disable();
-        playerDash.Disable();
+        playerAbilityOne.Disable();
+        playerAbilityTwo.Disable();
     }
 }

@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class CameraFollow : MonoBehaviour
 {
-    public Transform player;
+    public Transform targetChara;
     public InputAction mouseMove;
 
     [SerializeField] private Vector3 camOffset;
@@ -24,10 +24,20 @@ public class CameraFollow : MonoBehaviour
         rotationX = Mathf.Clamp(rotationX, minY, maxY);
 
         Quaternion camRotation = Quaternion.Euler(rotationX, rotationY, 0);
-        Vector3 camPos = player.position + camRotation * camOffset;
+        Vector3 camPos = targetChara.position + camRotation * camOffset;
 
         transform.position = camPos;
-        transform.LookAt(player.position + Vector3.up);
+        transform.LookAt(targetChara.position + Vector3.up);
+    }
+
+    public void SetTarget(Transform newTarget)
+    {
+        targetChara = newTarget;
+    }
+
+    public void SetRotation(float newY)
+    {
+        rotationY = newY;
     }
 
     void OnEnable()
